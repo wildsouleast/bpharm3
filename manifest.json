@@ -1,0 +1,20 @@
+{
+ "name": "B.Pharm Study Plan \u00b7 3rd Semester",
+ "short_name": "BPharm Study",
+ "start_url": "./",
+ "display": "standalone",
+ "background_color": "#f5f7f6",
+ "theme_color": "#ffffff",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}
