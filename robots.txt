@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bpharm3-reddy.netlify.app/sitemap.xml

@@ -357,3 +357,5 @@ body.in-subject .topnav{display:none}
 .gives b{font-weight:700}
 .locknote .gives,.locknote b{display:block;margin-top:6px;color:#6b3a00}
 .mt-till{color:var(--muted);font-size:13px}
+
+.subjpages{margin:14px 0 4px}.subjpages h3{font-size:16px;margin:0 0 6px}.subjpages ul{margin:0;padding-left:20px}.subjpages li{margin:4px 0}.subjpages a{color:var(--brand);font-weight:600}
