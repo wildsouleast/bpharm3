@@ -473,8 +473,8 @@
     var waText = "Hi, maine ₹" + CFG.PRICE + " PCI Plan ka payment kiya hai. Screenshot bhej raha/rahi hoon, unlock code de do.";
     var step2 = el("div", { class: "step" }, [el("span", { class: "sn", text: "2" }), el("div", null, [
       el("h3", { text: "Screenshot WhatsApp karo" }),
-      el("p", { text: "Payment karke screenshot WhatsApp karo: +91 " + CFG.WHATSAPP.slice(2) + ", aapko unlock code milega." }),
-      el("a", { class: "wa-btn", href: waLink(waText), target: "_blank", rel: "noopener" }, ["WhatsApp par screenshot bhejo"])
+      el("p", { text: "Payment karke screenshot WhatsApp karo, aapko unlock code milega." }),
+      el("a", { class: "wa-btn", href: waLink(waText), target: "_blank", rel: "noopener" }, ["WhatsApp pe screenshot bhejo"])
     ])]);
     var step3 = el("div", { class: "step" }, [el("span", { class: "sn", text: "3" }), el("div", null, [el("h3", { text: "Code daalo, plan unlock" }), el("p", { class: "muted", text: "Ek code ek student, ek phone ke liye. " + CFG.DAYS + " din chalega." }), codeBox()])]);
     kids.push(step1, step2, step3);

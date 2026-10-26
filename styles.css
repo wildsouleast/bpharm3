@@ -345,3 +345,5 @@ body.in-subject .topnav{display:none}
 .upibtn{display:block;text-decoration:none;text-align:center;margin:0 0 6px}
 .note.center,.center{text-align:center}
 .actions.center{justify-content:center;margin:16px 0}
+.step>div{min-width:0}
+.coderow .btn{flex:0 0 auto}
