@@ -787,19 +787,28 @@
     var parts = (location.hash || "#/").replace(/^#\/?/, "").split("/");
     var more = document.getElementById("more");
     if (parts[0] && BANKS[parts[0]]) { more.hidden = true; subject(parts[0], parts[1]); window.scrollTo(0, 0); return; }
+    if ((parts[0] === "login" || parts[0] === "register") && window.BP3Auth) {
+      more.hidden = true; window.BP3Auth.page(parts[0], app); window.scrollTo(0, 0); return;
+    }
     if (parts[0] === "plan" || parts[0] === "buy") {
       more.hidden = true;
       if (parts[0] === "buy") buyPage(); else if (parts[1] === "day") planQuiz(Number(parts[2])); else planPage();
+      if (window.BP3Auth) window.BP3Auth.afterRoute(parts[0], app);
       if (!(parts[0] === "plan" && !parts[1] && scrollToToday())) window.scrollTo(0, 0);
       return;
     }
     more.hidden = false;
     home();
+    if (window.BP3Auth) window.BP3Auth.afterRoute("home", app);
     var target = SECTIONS.indexOf(parts[0]) >= 0 ? document.getElementById(parts[0]) : null;
     if (target) { var y = target.getBoundingClientRect().top + window.pageYOffset - 70; window.scrollTo(0, Math.max(0, y)); }
     else window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", route);
+  window.BP3App = {
+    setTop: setTop, toast: toast,
+    reload: function () { today = istKey(); state = load("day_" + today, { answers: {}, results: {}, mcq: {} }); state.mcq = state.mcq || {}; try { refreshMeters(); } catch (e) {} route(); }
+  };
   route();
 
   if ("serviceWorker" in navigator && location.protocol === "https:") {
