@@ -1,5 +1,5 @@
 /* ===== PCI PLAN CONFIG — edit only the values below ===== */
-var UPI_ID = "PENDING";               // UPI ID for the ₹49 plan, e.g. "name@ybl" ("PENDING" = no QR yet)
+var UPI_ID = "aneesreddy@indie";                 // UPI ID for the ₹49 plan, e.g. "name@ybl" ("PENDING" = no QR yet)
 var PAYEE_NAME = "THE ANEES";          // payee name shown in the UPI app
 var PLAN_PRICE = 49;                   // rupees
 var PLAN_DAYS = 30;                    // days of access after unlock

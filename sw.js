@@ -1,4 +1,4 @@
-const C = "bp3-v5-nov";
+const C = "bp3-v6-pci";
 self.addEventListener("install", e => { self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(self.clients.claim()); });
 self.addEventListener("fetch", e => {
