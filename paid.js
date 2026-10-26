@@ -2,7 +2,7 @@
    (or arrives with a logged-in account that unlocked before) and kept as bp3_ck; nothing locked is in the page otherwise. */
 (function (root) {
   "use strict";
-  var KEY = "bp3_ck", VER = "11a", st = { open: false, err: null, p: null };
+  var KEY = "bp3_ck", VER = "12a", st = { open: false, err: null, p: null };
   function b64d(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
   function b64e(u) { var s = ""; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
   function getK() { try { var v = localStorage.getItem(KEY); return v ? JSON.parse(v) : null; } catch (e) { return null; } }

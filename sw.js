@@ -1,7 +1,7 @@
 /* B.Pharm Study Plan service worker: network-first (always revalidates, so new versions show at once), cache only as offline fallback. */
-const C = "bp3-v11-lock";
-const CORE = ["./", "index.html", "styles.css?v=11a", "app.js?v=11a", "auth.js?v=11a", "core.js?v=11a", "pci.js?v=11a", "codes.js?v=11a", "paid.js?v=11a", "config.js?v=11a", "vendor/qrcode.js?v=11a",
-  "data/bp301t.js?v=11a", "data/bp302t.js?v=11a", "data/bp303t.js?v=11a", "data/bp304t.js?v=11a", "icon-192.png", "manifest.json"];
+const C = "bp3-v12-free";
+const CORE = ["./", "index.html", "styles.css?v=12a", "app.js?v=12a", "auth.js?v=12a", "core.js?v=12a", "pci.js?v=12a", "codes.js?v=12a", "paid.js?v=12a", "config.js?v=12a", "vendor/qrcode.js?v=12a",
+  "data/bp301t.js?v=12a", "data/bp302t.js?v=12a", "data/bp303t.js?v=12a", "data/bp304t.js?v=12a", "icon-192.png", "manifest.json"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(CORE)).catch(() => {})); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

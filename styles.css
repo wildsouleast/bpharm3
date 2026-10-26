@@ -59,7 +59,8 @@ button,textarea{font:inherit;color:inherit}
 .q .num{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:13px}
 .q .unit{border:1px solid var(--line);border-radius:999px;padding:1px 8px}
 .q .done{margin-left:auto;font-weight:700}
-.q h3{margin:0 0 8px;font-size:16.5px;line-height:1.45;font-weight:600}
+.q h3{margin:0 0 8px;font-size:16.5px;line-height:1.45;font-weight:600;overflow-wrap:anywhere}
+.q .opt span,.q p,.q li{overflow-wrap:anywhere}
 .hint{font-size:14px;color:var(--muted);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 10px}
 .hint b{color:var(--ink);font-weight:600}
 textarea{width:100%;min-height:96px;resize:vertical;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);line-height:1.45}
