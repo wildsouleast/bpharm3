@@ -9,7 +9,7 @@
   var PER_DAY = { mcq: 30, a: 4, b: 5, c: 3 };
   var ALL_TODAY = PER_DAY.mcq + PER_DAY.a + PER_DAY.b + PER_DAY.c;
   var BANKS = window.BANKS || {};
-  var CFG = window.PCI_CONFIG || { UPI_ID: "PENDING", PAYEE_NAME: "B.Pharm Study Plan", PRICE: 49, DAYS: 30, FREE_PER_DAY: 10, WHATSAPP: "916204453997", NOTE: "PCI Plan" };
+  var CFG = window.PCI_CONFIG || { UPI_ID: "PENDING", PAYEE_NAME: "B.Pharm Study Plan", PRICE: 49, DAYS: 30, FREE_PER_DAY: 10, PLAN_PER_DAY: 40, WHATSAPP: "916204453997", NOTE: "PCI Plan" };
   var PCI = window.PCI;
   var app = document.getElementById("app");
   var LS = "bp3_";
@@ -125,7 +125,7 @@
       el("p", { class: "eyebrow light", text: "PCI syllabus · " + prettyDate(today) }),
       el("h1", { id: "hero-h" }, ["Welcome to ", el("span", { class: "grad", text: "B.Pharm" })]),
       el("p", { class: "tagline", text: "3rd Semester Study Plan" }),
-      el("p", { class: "sub", text: "Every day, for each of the 4 subjects: " + PER_DAY.mcq + " MCQs, " + PER_DAY.a + " two-mark, " + PER_DAY.c + " five-mark and " + PER_DAY.b + " ten-mark questions, checked instantly with model answers. Free: " + CFG.FREE_PER_DAY + " quiz answers a day + full syllabus and model answers. ₹" + CFG.PRICE + " plan: unlimited quiz + your own exam-date plan." }),
+      el("p", { class: "sub", text: "Every day, for each of the 4 subjects: " + PER_DAY.mcq + " MCQs, " + PER_DAY.a + " two-mark, " + PER_DAY.c + " five-mark and " + PER_DAY.b + " ten-mark questions, checked instantly with model answers. Free: " + CFG.FREE_PER_DAY + " MCQs a day, full syllabus and sample model answers (2 short + 1 long). ₹" + CFG.PRICE + " plan: all " + (PER_DAY.a + PER_DAY.c) + " short + " + PER_DAY.b + " long answers, " + (CFG.PLAN_PER_DAY || 40) + " MCQs a day + your own exam-date plan." }),
       el("div", { class: "cta" }, [
         el("a", { class: "btn hero-btn", href: "#/practice" }, ["Start today's practice"]),
         el("a", { class: "btn hero-ghost", href: "#/plan" }, ["₹" + CFG.PRICE + " Exam Plan"])
@@ -200,12 +200,12 @@
       else { upd(); list.appendChild(score); }
     } else if (kind === "short") {
       list.appendChild(sectionHead("Section A", "2 marks each · " + set.a.length + " questions"));
-      set.a.forEach(function (q, i) { list.appendChild(questionCard(id, "short", q, i + 1, b, 2)); });
+      set.a.forEach(function (q, i) { list.appendChild(questionCard(id, "short", q, i + 1, b, 2, i >= FREE_SAMPLE.short)); });
       list.appendChild(sectionHead("Section C", "5 marks each · " + set.c.length + " questions"));
-      set.c.forEach(function (q, i) { list.appendChild(questionCard(id, "mid", q, i + 1, b, 5)); });
+      set.c.forEach(function (q, i) { list.appendChild(questionCard(id, "mid", q, i + 1, b, 5, set.a.length + i >= FREE_SAMPLE.short)); });
     } else {
       list.appendChild(sectionHead("Section B", "10 marks each · " + set.b.length + " questions"));
-      set.b.forEach(function (q, i) { list.appendChild(questionCard(id, "long", q, i + 1, b, 10)); });
+      set.b.forEach(function (q, i) { list.appendChild(questionCard(id, "long", q, i + 1, b, 10, i >= FREE_SAMPLE.long)); });
     }
     app.replaceChildren(head, meterBox(), tabs, list);
   }
@@ -246,7 +246,19 @@
     return card;
   }
 
-  function questionCard(subj, kind, q, n, b, marks) {
+  // Free users: only the first FREE_SAMPLE.short short and FREE_SAMPLE.long long answers per set; the rest need the plan.
+  var FREE_SAMPLE = { short: 2, long: 1 };
+  function lockedCard(kind, q, n, b, marks) {
+    // the model answer / key points are never put in the page for a locked card
+    return el("article", { class: "q locked", id: "q-" + q.id }, [
+      el("div", { class: "top" }, [el("span", { class: "num", text: String(n) }), el("span", { class: "unit", text: unitName(b, q.unit) }), el("span", { class: "marks", text: marks + " marks" }), q.pyq ? el("span", { class: "pyq", text: "PYQ" }) : null, el("span", { class: "done lockic", text: "🔒" })]),
+      el("h3", { text: q.q }),
+      el("p", { class: "locknote" }, ["Free mein sirf sample answers khule hain. ", el("b", { text: planGives() })]),
+      el("div", { class: "actions" }, [el("a", { class: "btn lockbtn", href: "#/buy" }, ["🔒 ₹" + CFG.PRICE + " plan lo — sabhi answers unlock"])])
+    ]);
+  }
+  function questionCard(subj, kind, q, n, b, marks, sampleLocked) {
+    if (sampleLocked && !proInfo()) return lockedCard(kind, q, n, b, marks);
     var saved = state.answers[q.id] || "";
     var ta = el("textarea", { class: kind === "long" ? "long" : kind === "mid" ? "mid" : "", placeholder: kind !== "short" ? "Apna answer yahan likho (intro, points, diagram, conclusion)…" : "Apna answer yahan likho…", "aria-label": "Your answer to question " + n });
     ta.value = saved;
@@ -258,10 +270,6 @@
     function doCheck(user) {
       var text = ta.value.trim();
       if (!text) { if (user) toast("Pehle answer likho ✍️"); return; }
-      if (user && !state.results[q.id]) {
-        if (!canAttempt()) { res.replaceChildren(limitBox()); return; }
-        useOne();
-      }
       var hits = check(text, q.kp);
       var got = hits.filter(Boolean).length, total = q.kp.length;
       if (user) {
@@ -341,9 +349,12 @@
   var DAY_MS = 86400000;
   function proInfo() { var p = load("pro", null); return (p && p.until > Date.now()) ? p : null; }
   function freeUsed() { return Number(load("free_" + today, 0)) || 0; }
-  function freeLeft() { return Math.max(0, CFG.FREE_PER_DAY - freeUsed()); }
-  function canAttempt() { return !!proInfo() || freeLeft() > 0; }
-  function useOne() { if (proInfo()) return; save("free_" + today, freeUsed() + 1); refreshMeters(); }
+  // one daily MCQ counter: free users FREE_PER_DAY, plan users PLAN_PER_DAY (IST day)
+  function mcqLimit() { return proInfo() ? (CFG.PLAN_PER_DAY || 40) : CFG.FREE_PER_DAY; }
+  function freeLeft() { return Math.max(0, mcqLimit() - freeUsed()); }
+  function canAttempt() { return freeLeft() > 0; }
+  function useOne() { save("free_" + today, freeUsed() + 1); refreshMeters(); }
+  function planGives() { return "₹" + CFG.PRICE + " plan lene par: sabhi " + (PER_DAY.a + PER_DAY.c) + " Short + " + PER_DAY.b + " Long answers + roz " + (CFG.PLAN_PER_DAY || 40) + " MCQ + " + CFG.DAYS + "-din exam plan"; }
   (function cleanOldFree() { try { for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf(LS + "free_") === 0 && k !== LS + "free_" + today) localStorage.removeItem(k); } } catch (e) {} })();
   function shortDate(ms) { return prettyDate(istKey(new Date(ms + 330 * 60000))).replace(/^\w+, /, ""); }
   function waLink(text) { return "https://wa.me/" + CFG.WHATSAPP + "?text=" + encodeURIComponent(text); }
@@ -356,20 +367,23 @@
   }
   function fillMeter(box) {
     var p = proInfo();
-    if (p) box.replaceChildren(el("span", { class: "mt-pro", text: "✓ ₹" + CFG.PRICE + " Plan active" }), el("span", { text: " · unlimited quiz till " + shortDate(p.until) }));
-    else {
-      var left = freeLeft();
-      box.classList.toggle("empty0", left === 0);
-      box.replaceChildren(el("span", null, [el("b", { text: left + "/" + CFG.FREE_PER_DAY }), " free quiz sawal bache aaj"]), el("a", { href: "#/buy", text: "Unlimited: ₹" + CFG.PRICE + " →" }));
-    }
+    var left = freeLeft();
+    box.classList.toggle("empty0", left === 0);
+    if (p) box.replaceChildren(el("span", null, [el("span", { class: "mt-pro", text: "✓ Plan active" }), " · ", el("b", { text: left + "/" + mcqLimit() }), " MCQ bache aaj"]), el("span", { class: "mt-till", text: shortDate(p.until) + " tak" }));
+    else box.replaceChildren(el("span", null, [el("b", { text: left + "/" + CFG.FREE_PER_DAY }), " free MCQ bache aaj"]), el("a", { href: "#/buy", text: "₹" + CFG.PRICE + " plan →" }));
   }
   function refreshMeters() { Array.prototype.forEach.call(document.querySelectorAll("[data-meter]"), fillMeter); }
 
   function limitBox() {
+    if (proInfo()) return el("div", { class: "limit", role: "alert" }, [
+      el("p", { class: "lt", text: "Aaj ke " + mcqLimit() + " MCQ pure ho gaye 💪" }),
+      el("p", { text: "Kal phir " + mcqLimit() + " naye MCQ milenge. Tab tak short/long answers aur apna exam plan padho." }),
+      el("a", { class: "btn", href: "#/plan" }, ["Mera plan kholo"])
+    ]);
     return el("div", { class: "limit", role: "alert" }, [
       el("p", { class: "lt", text: "Aaj ki free limit khatam 🙏" }),
-      el("p", { text: "Aaj ke " + CFG.FREE_PER_DAY + " free sawal ho gaye. Kal phir " + CFG.FREE_PER_DAY + " free milenge. Notes, syllabus aur model answers free hi rahenge." }),
-      el("p", null, [el("b", { text: "₹" + CFG.PRICE + " plan lo:" }), " " + CFG.DAYS + " din unlimited quiz + apni exam date ke hisaab se daily study plan."]),
+      el("p", { text: "Aaj ke " + CFG.FREE_PER_DAY + " free MCQ ho gaye. Kal phir " + CFG.FREE_PER_DAY + " free milenge. Notes aur syllabus free hi rahenge." }),
+      el("p", { class: "gives" }, [el("b", { text: planGives() })]),
       el("a", { class: "btn", href: "#/buy" }, ["₹" + CFG.PRICE + " Plan lo"])
     ]);
   }
@@ -387,7 +401,7 @@
     return el("div", { class: "promo" }, [
       el("span", { class: "badge", text: "₹" + CFG.PRICE + " · " + CFG.DAYS + " din" }),
       el("span", { class: "pt", text: "Exam date daalo → apna 30-din ka plan" }),
-      el("span", { class: "ps", text: "Daily topics, daily quiz, revision days, exam se pehle mock test, aur unlimited practice." }),
+      el("span", { class: "ps", text: "Sabhi short + long answers, roz " + (CFG.PLAN_PER_DAY || 40) + " MCQ, daily topics, revision days aur exam se pehle mock test." }),
       el("div", { class: "row2" }, [el("a", { class: "btn", href: "#/plan" }, ["Plan banao"]), el("a", { class: "btn ghost", href: "#/buy" }, ["₹" + CFG.PRICE + " Plan lo"])])
     ]);
   }
@@ -412,7 +426,7 @@
     var start = p ? p.until : Date.now();
     save("pro", { until: start + CFG.DAYS * DAY_MS, at: Date.now(), h: h.slice(0, 16) });
     used.push(h.slice(0, 16)); save("used_codes", used);
-    return { ok: true, msg: "🎉 Plan unlock ho gaya! " + CFG.DAYS + " din unlimited." };
+    return { ok: true, msg: "🎉 Plan unlock ho gaya! " + CFG.DAYS + " din: sabhi answers + roz " + (CFG.PLAN_PER_DAY || 40) + " MCQ." };
   }
   function codeBox() {
     var inp = el("input", { type: "text", class: "codein", placeholder: "PCI-XXXXXX", autocomplete: "off", autocapitalize: "characters", spellcheck: "false", "aria-label": "Unlock code" });
@@ -434,12 +448,13 @@
   function buyPage() {
     setTop("₹" + CFG.PRICE + " Exam Plan", "PCI 3rd Semester · " + CFG.DAYS + " days", "#/plan");
     var p = proInfo();
-    var head = el("section", { class: "subhead" }, [el("h1", { text: "₹" + CFG.PRICE + " Plan lo" }), el("p", { text: CFG.DAYS + " din ke liye, ek baar ka payment. Koi auto-renew nahi." })]);
+    var head = el("section", { class: "subhead" }, [el("h1", { text: "₹" + CFG.PRICE + " Plan lo" }), el("p", { text: CFG.DAYS + " din ke liye, ek baar ka payment. Koi auto-renew nahi." }), el("p", { class: "gives" }, [el("b", { text: planGives() })])]);
     var perks = el("ul", { class: "perks" }, [
       "Apni exam date daalo → " + CFG.DAYS + "-din ka personal study plan (sab 4 subjects, 20 units)",
       "Har din ke topics + us din ka quiz",
       "Revision days aur exam se pehle full mock test",
-      "Unlimited MCQ aur answer checking (free mein " + CFG.FREE_PER_DAY + "/din)",
+      "Sabhi " + (PER_DAY.a + PER_DAY.c) + " Short + " + PER_DAY.b + " Long model answers + answer check, har subject (free mein sirf 2 short + 1 long sample)",
+      "Roz " + (CFG.PLAN_PER_DAY || 40) + " MCQ (free mein " + CFG.FREE_PER_DAY + "/din)",
       "Progress ticks: kitne din pure hue, sab phone pe saved"
     ].map(function (t) { return el("li", { text: t }); }));
     var kids = [head];
@@ -478,7 +493,7 @@
     ])]);
     var step3 = el("div", { class: "step" }, [el("span", { class: "sn", text: "3" }), el("div", null, [el("h3", { text: "Code daalo, plan unlock" }), el("p", { class: "muted", text: "Ek code ek student, ek phone ke liye. " + CFG.DAYS + " din chalega." }), codeBox()])]);
     kids.push(step1, step2, step3);
-    kids.push(el("p", { class: "note center", text: "Notes, syllabus, model answers aur roz " + CFG.FREE_PER_DAY + " quiz sawal hamesha free rahenge." }));
+    kids.push(el("p", { class: "note center", text: "Notes, syllabus, sample answers aur roz " + CFG.FREE_PER_DAY + " MCQ hamesha free rahenge." }));
     app.replaceChildren.apply(app, kids);
   }
   function fallbackCopy(t) { var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove(); }
@@ -585,7 +600,8 @@
           var hidden = plan.total - 2;
           kids.push(el("div", { class: "lockcard" }, [
             el("p", { class: "lt", text: "🔒 Baaki " + Math.max(0, hidden) + " din ka plan + daily quiz locked hai" }),
-            el("p", { text: "₹" + CFG.PRICE + " mein poora plan, har din ka quiz, revision + mock test, aur " + CFG.DAYS + " din unlimited practice." }),
+            el("p", { class: "gives" }, [el("b", { text: planGives() })]),
+            el("p", { text: "Poora plan, har din ka quiz, revision + mock test." }),
             el("a", { class: "btn", href: "#/buy" }, ["₹" + CFG.PRICE + " Plan lo"]),
             codeBox()
           ]));
