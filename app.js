@@ -149,17 +149,19 @@
     SUBJECTS.forEach(function (s) {
       var b = BANKS[s.id]; if (!b) return;
       var p = pools(b);
-      var done = todayTotals(s.id).done + mcqTotals(s.id).done;
+            var set = todaySet(s.id), pr = subjProgress(s.id, set);
       var card = el("article", { class: "subject", style: "--accent:var(" + s.accent + ")" }, [
-        el("div", { class: "code", text: b.code }),
-        el("h3", { text: b.name }),
-        el("p", { class: "meta", text: done + "/" + ALL_TODAY + " done today · bank: " + mcqList(b).length + " MCQ, " + (p.a.length + p.c.length) + " short, " + p.b.length + " long" }),
-        el("div", { class: "row three" }, [
-          el("a", { class: "pill", href: "#/" + s.id + "/mcq" }, [el("strong", { text: "MCQ" }), el("small", { text: PER_DAY.mcq + " today" })]),
-          el("a", { class: "pill", href: "#/" + s.id + "/short" }, [el("strong", { text: "Short Answer" }), el("small", { text: (PER_DAY.a + PER_DAY.c) + " today" })]),
-          el("a", { class: "pill", href: "#/" + s.id + "/long" }, [el("strong", { text: "Long Answer" }), el("small", { text: PER_DAY.b + " today" })])
+        el("a", { class: "sj-head", href: "#/" + s.id, "aria-label": "Open " + b.name }, [
+          ico(SUBJ_ICON[s.id] || "flask", "sj-ic"),
+          el("span", { class: "sj-txt" }, [el("span", { class: "code", text: b.code }), el("h3", { text: b.name }), el("span", { class: "meta", text: "Bank: " + mcqList(b).length + " MCQ · " + (p.a.length + p.c.length) + " short · " + p.b.length + " long" })]),
+          ring(pr.pct)
         ]),
-        el("div", { class: "progress", "aria-hidden": "true" }, [el("i", { style: "width:" + Math.round(100 * done / ALL_TODAY) + "%" })])
+        el("div", { class: "row three" }, [
+          el("a", { class: "pill", href: "#/" + s.id + "/mcq" }, [ico("capsule", "pi"), el("strong", { text: "MCQ" }), el("small", { text: PER_DAY.mcq + " today" })]),
+          el("a", { class: "pill", href: "#/" + s.id + "/short" }, [ico("pen", "pi"), el("strong", { text: "Short" }), el("small", { text: (PER_DAY.a + PER_DAY.c) + " today" })]),
+          el("a", { class: "pill", href: "#/" + s.id + "/long" }, [ico("doc", "pi"), el("strong", { text: "Long" }), el("small", { text: PER_DAY.b + " today" })])
+        ]),
+        el("div", { class: "progress", "aria-hidden": "true" }, [el("i", { style: "width:" + pr.pct + "%" })])
       ]);
       grid.appendChild(card);
     });
@@ -174,40 +176,165 @@
 
   function sectionHead(title, sub) { return el("div", { class: "sechead" }, [el("h2", { text: title }), el("span", { text: sub })]); }
 
+  // ---------- v3 UI: pharmacy icons (static SVG strings, no user data) ----------
+  var ICONS = {
+    flask: '<path d="M9 3h6M10 3v6.5L4.6 18.4A2 2 0 0 0 6.3 21.5h11.4a2 2 0 0 0 1.7-3.1L14 9.5V3"/><path d="M7.2 15h9.6"/><circle cx="10" cy="18" r=".8" fill="currentColor"/><circle cx="13.5" cy="17.2" r=".6" fill="currentColor"/>',
+    mortar: '<path d="M3 11h18"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M9 21h6M12 18v3"/><path d="M13.5 11 19 3.5"/>',
+    microbe: '<circle cx="12" cy="12" r="5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4M5.3 5.3l2.8 2.8M15.9 15.9l2.8 2.8M5.3 18.7l2.8-2.8M15.9 8.1l2.8-2.8"/><circle cx="10.4" cy="11" r="1" fill="currentColor"/><circle cx="13.6" cy="13.4" r=".8" fill="currentColor"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.9 1.9M17.5 17.5l1.9 1.9M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.9-1.9M17.5 6.5l1.9-1.9"/><circle cx="12" cy="12" r="6.5"/>',
+    capsule: '<g transform="rotate(-45 12 12)"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8h-5a4 4 0 0 0 0 8h5z" fill="currentColor" fill-opacity=".3"/><path d="M12 8v8"/></g>',
+    pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/><path d="M14 20h6"/>',
+    doc: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7M9 8h3"/>',
+    plan: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15l2 2 4-4"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    chev: '<path d="M9 5l7 7-7 7"/>',
+    book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8 7h8M8 11h6"/>'
+  };
+  var SUBJ_ICON = { bp301t: "flask", bp302t: "mortar", bp303t: "microbe", bp304t: "gear" };
+  function ico(name, cls) {
+    var s = el("span", { class: "ico " + (cls || ""), "aria-hidden": "true" });
+    s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + "</svg>";
+    return s;
+  }
+  function subjAccent(id) { for (var i = 0; i < SUBJECTS.length; i++) if (SUBJECTS[i].id === id) return SUBJECTS[i].accent; return "--brand"; }
+  function ring(pct, label) {
+    return el("span", { class: "ring", style: "--p:" + pct, role: "img", "aria-label": pct + "% " + (label || "done today") }, [el("b", { text: pct + "%" }), el("small", { text: label || "aaj" })]);
+  }
+  // today's progress for one subject, split by mode
+  function subjProgress(id, set) {
+    var m = 0, mr = 0, s = 0, l = 0;
+    set.mcq.forEach(function (q) { var r = state.mcq[q.id]; if (r) { m++; if (r.ok) mr++; } });
+    set.a.concat(set.c).forEach(function (q) { if (state.results[q.id]) s++; });
+    set.b.forEach(function (q) { if (state.results[q.id]) l++; });
+    var total = set.mcq.length + set.a.length + set.c.length + set.b.length;
+    var done = m + s + l;
+    return { m: m, mr: mr, s: s, l: l, done: done, total: total, pct: total ? Math.round(100 * done / total) : 0 };
+  }
+  function modeCards(id, set, kind, asTabs) {
+    var pro = proInfo();
+    var nShort = set.a.length + set.c.length;
+    var modes = [
+      { k: "mcq", icon: "capsule", t: "MCQ Practice", d: set.mcq.length + " Qs · 1 mark · turant result", badge: pro ? mcqLimit() + "/din" : CFG.FREE_PER_DAY + " free/din", go: "Start MCQ" },
+      { k: "short", icon: "pen", t: "Short Answer", d: set.a.length + " × 2 marks + " + set.c.length + " × 5 marks", badge: pro ? "Sab unlocked" : Math.min(FREE_SAMPLE.short, nShort) + " free", go: "Likhna shuru" },
+      { k: "long", icon: "doc", t: "Long Answer", d: set.b.length + " × 10 marks · exam pattern", badge: pro ? "Sab unlocked" : Math.min(FREE_SAMPLE.long, set.b.length) + " free", go: "Likhna shuru" }
+    ];
+    var wrap = el("nav", { class: "modes" + (asTabs ? " as-tabs" : ""), "aria-label": "Practice mode" });
+    if (asTabs) wrap.setAttribute("role", "tablist");
+    modes.forEach(function (m) {
+      var sel = asTabs && m.k === kind;
+      var a = el("a", { class: "mode mode-" + m.k + (sel ? " on" : ""), href: "#/" + id + "/" + m.k }, [
+        ico(m.icon, "mi"),
+        el("span", { class: "mtxt" }, [el("strong", { text: m.t }), el("small", { text: m.d })]),
+        el("span", { class: "mbadge" + (pro ? " pro" : "") }, [m.badge]),
+        el("span", { class: "mgo" }, [m.go, ico("chev", "tiny")])
+      ]);
+      if (asTabs) { a.setAttribute("role", "tab"); a.setAttribute("aria-selected", String(sel)); }
+      wrap.appendChild(a);
+    });
+    return wrap;
+  }
+  function subjectHero(id, b, set, compact) {
+    var pr = subjProgress(id, set);
+    return el("section", { class: "shero" + (compact ? " compact" : ""), style: "--accent:var(" + subjAccent(id) + ")" }, [
+      ico(SUBJ_ICON[id] || "flask", "sh-bg"),
+      el("div", { class: "sh-row" }, [
+        ico(SUBJ_ICON[id] || "flask", "sh-ic"),
+        el("div", { class: "sh-txt" }, [
+          el("p", { class: "sh-code" }, [el("span", { text: b.code }), el("span", { class: "rx", text: "℞" }), el("span", { text: "PCI · Sem 3" })]),
+          el("h1", { text: b.name }),
+          el("p", { class: "sh-sub", text: "Aaj ka set · " + prettyDate(today) })
+        ]),
+        ring(pr.pct)
+      ]),
+      el("div", { class: "sh-stats" }, [
+        el("span", null, [el("b", { text: pr.mr + "/" + set.mcq.length }), " MCQ sahi"]),
+        el("span", null, [el("b", { text: pr.s + "/" + (set.a.length + set.c.length) }), " short"]),
+        el("span", null, [el("b", { text: pr.l + "/" + set.b.length }), " long"])
+      ])
+    ]);
+  }
+  function unitFilter(b, list, qs) {
+    var units = [];
+    qs.forEach(function (q) { if (units.indexOf(String(q.unit)) < 0) units.push(String(q.unit)); });
+    units.sort(function (x, y) { return Number(x) - Number(y); });
+    if (units.length < 2) return null;
+    var row = el("div", { class: "ufilter", role: "group", "aria-label": "Filter by unit" });
+    function pick(u, btn) {
+      Array.prototype.forEach.call(row.children, function (c) { c.setAttribute("aria-pressed", String(c === btn)); });
+      Array.prototype.forEach.call(list.querySelectorAll("[data-unit]"), function (c) { c.hidden = !(u === "all" || c.getAttribute("data-unit") === u); });
+    }
+    var all = el("button", { type: "button", "aria-pressed": "true", onclick: function () { pick("all", all); } }, ["Sab units"]);
+    row.appendChild(all);
+    units.forEach(function (u) {
+      var nm = b.units && b.units[u];
+      var bt = el("button", { type: "button", "aria-pressed": "false", title: nm ? "Unit " + u + " · " + nm : "Unit " + u, onclick: function () { pick(u, bt); } }, ["Unit " + u]);
+      row.appendChild(bt);
+    });
+    return row;
+  }
+  function subjectHub(id, b, set) {
+    var units = Object.keys(b.units || {}).sort(function (x, y) { return Number(x) - Number(y); });
+    var mcqs = mcqList(b), p = pools(b);
+    var cnt = function (arr, u) { return arr.filter(function (q) { return String(q.unit) === u; }).length; };
+    var ulist = el("ol", { class: "units" }, units.map(function (u) {
+      return el("li", null, [
+        el("span", { class: "un", text: u }),
+        el("span", { class: "ut" }, [el("strong", { text: b.units[u] }), el("small", { text: cnt(mcqs, u) + " MCQ · " + (cnt(p.a, u) + cnt(p.c, u)) + " short · " + cnt(p.b, u) + " long in bank" })])
+      ]);
+    }));
+    return [
+      el("div", { class: "hubhead" }, [el("h2", { text: "Aaj kya practice karna hai?" }), el("p", { text: "Ek mode chuno. Har din naye questions, raat 12 baje (IST) badalte hain." })]),
+      modeCards(id, set, null, false),
+      el("a", { class: "mode mode-plan", href: proInfo() ? "#/plan" : "#/buy" }, [
+        ico("plan", "mi"),
+        el("span", { class: "mtxt" }, [el("strong", { text: CFG.DAYS + "-din Exam Plan + Mock test" }), el("small", { text: proInfo() ? "Apna exam-date plan kholo" : "₹" + CFG.PRICE + " · sabhi answers + roz " + (CFG.PLAN_PER_DAY || 40) + " MCQ" })]),
+        el("span", { class: "mbadge" + (proInfo() ? " pro" : " gold") }, [proInfo() ? "Active ✓" : "₹" + CFG.PRICE]),
+        el("span", { class: "mgo" }, [proInfo() ? "Open" : "Plan dekho", ico("chev", "tiny")])
+      ]),
+      units.length ? el("section", { class: "unitsec" }, [
+        el("div", { class: "sechead" }, [el("h2", null, [ico("book", "tiny"), " Syllabus units"]), el("span", { text: units.length + " units · PCI" })]),
+        ulist
+      ]) : null
+    ];
+  }
+
   function subject(id, kind) {
     var b = BANKS[id]; if (!b) { location.hash = "#/"; return; }
-    kind = (kind === "long" || kind === "mcq") ? kind : "short";
-    document.getElementById("backBtn").hidden = false; backTo = "#/";
+    kind = (kind === "long" || kind === "mcq" || kind === "short") ? kind : null;
+    document.getElementById("backBtn").hidden = false; backTo = kind ? "#/" + id : "#/";
     document.getElementById("topTitle").textContent = b.code;
     document.getElementById("topSub").textContent = b.name;
     document.body.classList.add("in-subject");
     var set = todaySet(id);
-    var head = el("section", { class: "subhead" }, [el("h1", { text: b.name }), el("p", { text: "Today's set · " + prettyDate(today) + " · exam pattern: 75 marks, 3 hrs" })]);
-    var labels = { mcq: "MCQ (" + set.mcq.length + ")", short: "Short (" + (set.a.length + set.c.length) + ")", long: "Long (" + set.b.length + ")" };
-    var tabs = el("div", { class: "tabs", role: "tablist" }, ["mcq", "short", "long"].map(function (k) {
-      return el("button", { class: "tab", role: "tab", "aria-selected": String(k === kind), onclick: function () { location.hash = "#/" + id + "/" + k; } }, [labels[k]]);
-    }));
-    var list = el("div");
+    if (!kind) { app.replaceChildren.apply(app, [subjectHero(id, b, set, false), meterBox()].concat(subjectHub(id, b, set).filter(Boolean))); return; }
+    var head = subjectHero(id, b, set, true);
+    var tabs = modeCards(id, set, kind, true);
+    var list = el("div", { class: "qlist" });
+    var qs = [];
+    function add(card, q) { card.setAttribute("data-unit", String(q.unit)); qs.push(q); list.appendChild(card); }
     if (kind === "mcq") {
       list.appendChild(sectionHead("Objective MCQs", "1 mark each · tap an option"));
       var score = el("div", { class: "mcqscore", "aria-live": "polite" });
+      var bar = el("i");
       var upd = function () {
         var r = 0, d = 0; set.mcq.forEach(function (q) { var s = state.mcq[q.id]; if (s) { d++; if (s.ok) r++; } });
-        score.replaceChildren(el("b", { text: r + "/" + set.mcq.length }), el("span", { text: d === set.mcq.length ? (r >= 0.8 * set.mcq.length ? " Shandaar! 🎉" : r >= 0.5 * set.mcq.length ? " Achha hai, galat waale dobara padho" : " Revise karo, kal phir try karo") : " correct · " + d + "/" + set.mcq.length + " attempted" }));
+        bar.style.width = (set.mcq.length ? Math.round(100 * d / set.mcq.length) : 0) + "%";
+        score.replaceChildren(el("span", { class: "msbar", "aria-hidden": "true" }, [bar]), el("b", { text: r + "/" + set.mcq.length }), el("span", { text: d === set.mcq.length ? (r >= 0.8 * set.mcq.length ? " Shandaar! 🎉" : r >= 0.5 * set.mcq.length ? " Achha hai, galat waale dobara padho" : " Revise karo, kal phir try karo") : " correct · " + d + "/" + set.mcq.length + " attempted" }));
       };
-      set.mcq.forEach(function (q, i) { list.appendChild(mcqCard(id, q, i + 1, b, upd)); });
+      set.mcq.forEach(function (q, i) { add(mcqCard(id, q, i + 1, b, upd), q); });
       if (!set.mcq.length) list.appendChild(el("p", { class: "empty", text: "MCQs coming soon." }));
       else { upd(); list.appendChild(score); }
     } else if (kind === "short") {
       list.appendChild(sectionHead("Section A", "2 marks each · " + set.a.length + " questions"));
-      set.a.forEach(function (q, i) { list.appendChild(questionCard(id, "short", q, i + 1, b, 2, i >= FREE_SAMPLE.short)); });
+      set.a.forEach(function (q, i) { add(questionCard(id, "short", q, i + 1, b, 2, i >= FREE_SAMPLE.short), q); });
       list.appendChild(sectionHead("Section C", "5 marks each · " + set.c.length + " questions"));
-      set.c.forEach(function (q, i) { list.appendChild(questionCard(id, "mid", q, i + 1, b, 5, set.a.length + i >= FREE_SAMPLE.short)); });
+      set.c.forEach(function (q, i) { add(questionCard(id, "mid", q, i + 1, b, 5, set.a.length + i >= FREE_SAMPLE.short), q); });
     } else {
       list.appendChild(sectionHead("Section B", "10 marks each · " + set.b.length + " questions"));
-      set.b.forEach(function (q, i) { list.appendChild(questionCard(id, "long", q, i + 1, b, 10, i >= FREE_SAMPLE.long)); });
+      set.b.forEach(function (q, i) { add(questionCard(id, "long", q, i + 1, b, 10, i >= FREE_SAMPLE.long), q); });
     }
-    app.replaceChildren(head, meterBox(), tabs, list);
+    app.replaceChildren(head, meterBox(), tabs, unitFilter(b, list, qs) || el("span"), list);
   }
 
   function mcqCard(subj, q, n, b, onDone, store) {
@@ -251,9 +378,9 @@
   function lockedCard(kind, q, n, b, marks) {
     // the model answer / key points are never put in the page for a locked card
     return el("article", { class: "q locked", id: "q-" + q.id }, [
-      el("div", { class: "top" }, [el("span", { class: "num", text: String(n) }), el("span", { class: "unit", text: unitName(b, q.unit) }), el("span", { class: "marks", text: marks + " marks" }), q.pyq ? el("span", { class: "pyq", text: "PYQ" }) : null, el("span", { class: "done lockic", text: "🔒" })]),
+      el("div", { class: "top" }, [el("span", { class: "num", text: String(n) }), el("span", { class: "unit", text: unitName(b, q.unit) }), el("span", { class: "marks", text: marks + " marks" }), q.pyq ? el("span", { class: "pyq", text: "PYQ" }) : null, el("span", { class: "done lockic" }, [ico("lock", "tiny")])]),
       el("h3", { text: q.q }),
-      el("p", { class: "locknote" }, ["Free mein sirf sample answers khule hain. ", el("b", { text: planGives() })]),
+      el("div", { class: "lockpanel" }, [ico("lock", "lp-ic"), el("p", { class: "locknote" }, ["Free mein sirf sample answers khule hain. ", el("b", { text: planGives() })])]),
       el("div", { class: "actions" }, [el("a", { class: "btn lockbtn", href: "#/buy" }, ["🔒 ₹" + CFG.PRICE + " plan lo — sabhi answers unlock"])])
     ]);
   }
@@ -675,7 +802,7 @@
   window.addEventListener("hashchange", route);
   route();
 
-  if ("serviceWorker" in navigator && location.protocol === "https:" && /sites\.tab\.bot$/.test(location.hostname)) {
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
 })();

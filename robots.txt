@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://bpharm3-reddy.netlify.app/sitemap.xml
+Sitemap: https://pharma3sem.publicvm.com/sitemap.xml
