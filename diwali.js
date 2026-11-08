@@ -98,7 +98,7 @@
   function mount() {
     var header = document.querySelector("header.topbar"); if (!header) return;
     var wrap = h("div", { class: "dw-wrap", style: "position:relative" });
-    wrap.appendChild(lights); wrap.appendChild(lantern("l")); wrap.appendChild(lantern("r")); wrap.appendChild(banner);
+    wrap.appendChild(lights); wrap.appendChild(lantern("l")); wrap.appendChild(lantern("r")); /* banner removed (Nov 8 2026: ₹49 Diwali banner hidden) */
     header.parentNode.insertBefore(wrap, header.nextSibling);
     build();
     var t; window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(build, 200); });
